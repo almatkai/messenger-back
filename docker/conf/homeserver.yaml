@@ -73,7 +73,7 @@ database:
 database:
   name: "sqlite3"
   args:
-    database: "/data/homeserver.db"
+    database: "/data/homeserver.db" 
 {% endif %}
 
 ## Performance ##
@@ -191,3 +191,6 @@ trusted_key_servers:
 
 password_config:
    enabled: true
+
+logging:
+  level: DEBUG
