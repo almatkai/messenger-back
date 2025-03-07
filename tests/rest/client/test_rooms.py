@@ -67,7 +67,6 @@ from tests.http.server._base import make_request_with_cancellation_test
 from tests.storage.test_stream import PaginationTestCase
 from tests.test_utils.event_injection import create_event
 from tests.unittest import override_config
-from tests.utils import default_config
 
 PATH_PREFIX = b"/_matrix/client/api/v1"
 
@@ -1372,23 +1371,6 @@ class RoomJoinTestCase(RoomBase):
         )
         self.assertEqual(channel.json_body["errcode"], "M_USER_SUSPENDED")
 
-    def test_suspended_user_can_leave_room(self) -> None:
-        channel = self.make_request(
-            "POST", f"/join/{self.room1}", access_token=self.tok1
-        )
-        self.assertEqual(channel.code, 200)
-
-        # set the user as suspended
-        self.get_success(self.store.set_user_suspended_status(self.user1, True))
-
-        # leave room
-        channel = self.make_request(
-            "POST",
-            f"/rooms/{self.room1}/leave",
-            access_token=self.tok1,
-        )
-        self.assertEqual(channel.code, 200)
-
 
 class RoomAppserviceTsParamTestCase(unittest.HomeserverTestCase):
     servlets = [
@@ -2565,11 +2547,6 @@ class PublicRoomsRoomTypeFilterTestCase(unittest.HomeserverTestCase):
             },
             tok=self.token,
         )
-
-    def default_config(self) -> JsonDict:
-        config = default_config("test")
-        config["room_list_publication_rules"] = [{"action": "allow"}]
-        return config
 
     def make_public_rooms_request(
         self,
@@ -4012,25 +3989,10 @@ class UserSuspensionTests(unittest.HomeserverTestCase):
         self.user2 = self.register_user("teresa", "hackme")
         self.tok2 = self.login("teresa", "hackme")
 
-        self.admin = self.register_user("admin", "pass", True)
-        self.admin_tok = self.login("admin", "pass")
-
-        self.room1 = self.helper.create_room_as(
-            room_creator=self.user1, tok=self.tok1, room_version="11"
-        )
+        self.room1 = self.helper.create_room_as(room_creator=self.user1, tok=self.tok1)
         self.store = hs.get_datastores().main
 
-        self.room2 = self.helper.create_room_as(
-            room_creator=self.user1, is_public=False, tok=self.tok1
-        )
-        self.helper.send_state(
-            self.room2,
-            EventTypes.RoomEncryption,
-            {EventContentFields.ENCRYPTION_ALGORITHM: "m.megolm.v1.aes-sha2"},
-            tok=self.tok1,
-        )
-
-    def test_suspended_user_cannot_send_message_to_public_room(self) -> None:
+    def test_suspended_user_cannot_send_message_to_room(self) -> None:
         # set the user as suspended
         self.get_success(self.store.set_user_suspended_status(self.user1, True))
 
@@ -4039,24 +4001,6 @@ class UserSuspensionTests(unittest.HomeserverTestCase):
             f"/rooms/{self.room1}/send/m.room.message/1",
             access_token=self.tok1,
             content={"body": "hello", "msgtype": "m.text"},
-        )
-        self.assertEqual(channel.json_body["errcode"], "M_USER_SUSPENDED")
-
-    def test_suspended_user_cannot_send_message_to_encrypted_room(self) -> None:
-        channel = self.make_request(
-            "PUT",
-            f"/_synapse/admin/v1/suspend/{self.user1}",
-            {"suspend": True},
-            access_token=self.admin_tok,
-        )
-        self.assertEqual(channel.code, 200)
-        self.assertEqual(channel.json_body, {f"user_{self.user1}_suspended": True})
-
-        channel = self.make_request(
-            "PUT",
-            f"/rooms/{self.room2}/send/m.room.encrypted/1",
-            access_token=self.tok1,
-            content={},
         )
         self.assertEqual(channel.json_body["errcode"], "M_USER_SUSPENDED")
 
@@ -4122,54 +4066,6 @@ class UserSuspensionTests(unittest.HomeserverTestCase):
             f"/_matrix/client/v3/rooms/{self.room1}/redact/{event_id2}/1",
             access_token=self.tok1,
             content={"reason": "bogus"},
-            shorthand=False,
-        )
-        self.assertEqual(channel.code, 200)
-
-        channel = self.make_request(
-            "PUT",
-            f"/_matrix/client/v3/rooms/{self.room1}/send/m.room.redaction/3456346",
-            access_token=self.tok1,
-            content={"reason": "bogus", "redacts": event_id},
-            shorthand=False,
-        )
-        self.assertEqual(channel.json_body["errcode"], "M_USER_SUSPENDED")
-
-        channel = self.make_request(
-            "PUT",
-            f"/_matrix/client/v3/rooms/{self.room1}/send/m.room.redaction/3456346",
-            access_token=self.tok1,
-            content={"reason": "bogus", "redacts": event_id2},
-            shorthand=False,
-        )
-        self.assertEqual(channel.code, 200)
-
-    def test_suspended_user_cannot_ban_others(self) -> None:
-        # user to ban joins room user1 created
-        self.make_request("POST", f"/rooms/{self.room1}/join", access_token=self.tok2)
-
-        # suspend user1
-        self.get_success(self.store.set_user_suspended_status(self.user1, True))
-
-        # user1 tries to ban other user while suspended
-        channel = self.make_request(
-            "POST",
-            f"/_matrix/client/v3/rooms/{self.room1}/ban",
-            access_token=self.tok1,
-            content={"reason": "spite", "user_id": self.user2},
-            shorthand=False,
-        )
-        self.assertEqual(channel.json_body["errcode"], "M_USER_SUSPENDED")
-
-        # un-suspend user1
-        self.get_success(self.store.set_user_suspended_status(self.user1, False))
-
-        # ban now goes through
-        channel = self.make_request(
-            "POST",
-            f"/_matrix/client/v3/rooms/{self.room1}/ban",
-            access_token=self.tok1,
-            content={"reason": "spite", "user_id": self.user2},
             shorthand=False,
         )
         self.assertEqual(channel.code, 200)

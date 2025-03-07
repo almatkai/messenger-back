@@ -3579,24 +3579,6 @@ Options for each entry include:
    to `auto`, which uses PKCE if supported during metadata discovery. Set to `always`
    to force enable PKCE or `never` to force disable PKCE.
 
-* `id_token_signing_alg_values_supported`: List of the JWS signing algorithms (`alg`
-  values) that are supported for signing the `id_token`.
-
-  This is *not* required if `discovery` is disabled. We default to supporting `RS256` in
-  the downstream usage if no algorithms are configured here or in the discovery
-  document.
-
-  According to the spec, the algorithm `"RS256"` MUST be included. The absolute rigid
-  approach would be to reject this provider as non-compliant if it's not included but we
-  simply allow whatever and see what happens (you're the one that configured the value
-  and cooperating with the identity provider).
-
-  The `alg` value `"none"` MAY be supported but can only be used if the Authorization
-  Endpoint does not include `id_token` in the `response_type` (ex.
-  `/authorize?response_type=code` where `none` can apply,
-  `/authorize?response_type=code%20id_token` where `none` can't apply) (such as when
-  using the Authorization Code Flow).
-
 * `scopes`: list of scopes to request. This should normally include the "openid"
    scope. Defaults to `["openid"]`.
 
@@ -4245,8 +4227,8 @@ unwanted entries from being published in the public room list.
 
 The format of this option is the same as that for
 [`alias_creation_rules`](#alias_creation_rules): an optional list of 0 or more
-rules. By default, no list is provided, meaning that no one may publish to the
-room list (except server admins).
+rules. By default, no list is provided, meaning that all rooms may be
+published to the room list.
 
 Otherwise, requests to publish a room are matched against each rule in order.
 The first rule that matches decides if the request is allowed or denied. If no
@@ -4270,10 +4252,6 @@ Each of the glob patterns is optional, defaulting to `*` ("match anything").
 Note that the patterns match against fully qualified IDs, e.g. against
 `@alice:example.com`, `#room:example.com` and `!abcdefghijk:example.com` instead
 of `alice`, `room` and `abcedgghijk`.
-
-
-_Changed in Synapse 1.126.0: The default was changed to deny publishing to the
-room list by default_
 
 
 Example configuration:

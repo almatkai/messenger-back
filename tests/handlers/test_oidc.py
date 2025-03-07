@@ -70,16 +70,12 @@ DEFAULT_CONFIG = {
 }
 
 # extends the default config with explicit OAuth2 endpoints instead of using discovery
-#
-# We add "explicit" to things to make them different from the discovered values to make
-# sure that the explicit values override the discovered ones.
 EXPLICIT_ENDPOINT_CONFIG = {
     **DEFAULT_CONFIG,
     "discover": False,
-    "authorization_endpoint": ISSUER + "authorize-explicit",
-    "token_endpoint": ISSUER + "token-explicit",
-    "jwks_uri": ISSUER + "jwks-explicit",
-    "id_token_signing_alg_values_supported": ["RS256", "<explicit>"],
+    "authorization_endpoint": ISSUER + "authorize",
+    "token_endpoint": ISSUER + "token",
+    "jwks_uri": ISSUER + "jwks",
 }
 
 
@@ -263,63 +259,11 @@ class OidcHandlerTestCase(HomeserverTestCase):
         self.get_success(self.provider.load_metadata())
         self.fake_server.get_metadata_handler.assert_not_called()
 
-    @override_config({"oidc_config": {**EXPLICIT_ENDPOINT_CONFIG, "discover": True}})
-    def test_discovery_with_explicit_config(self) -> None:
-        """
-        The handler should discover the endpoints from OIDC discovery document but
-        values are overriden by the explicit config.
-        """
-        # This would throw if some metadata were invalid
-        metadata = self.get_success(self.provider.load_metadata())
-        self.fake_server.get_metadata_handler.assert_called_once()
-
-        self.assertEqual(metadata.issuer, self.fake_server.issuer)
-        # It seems like authlib does not have that defined in its metadata models
-        self.assertEqual(
-            metadata.get("userinfo_endpoint"),
-            self.fake_server.userinfo_endpoint,
-        )
-
-        # Ensure the values are overridden correctly since these were configured
-        # explicitly
-        self.assertEqual(
-            metadata.authorization_endpoint,
-            EXPLICIT_ENDPOINT_CONFIG["authorization_endpoint"],
-        )
-        self.assertEqual(
-            metadata.token_endpoint, EXPLICIT_ENDPOINT_CONFIG["token_endpoint"]
-        )
-        self.assertEqual(metadata.jwks_uri, EXPLICIT_ENDPOINT_CONFIG["jwks_uri"])
-        self.assertEqual(
-            metadata.id_token_signing_alg_values_supported,
-            EXPLICIT_ENDPOINT_CONFIG["id_token_signing_alg_values_supported"],
-        )
-
-        # subsequent calls should be cached
-        self.reset_mocks()
-        self.get_success(self.provider.load_metadata())
-        self.fake_server.get_metadata_handler.assert_not_called()
-
     @override_config({"oidc_config": EXPLICIT_ENDPOINT_CONFIG})
     def test_no_discovery(self) -> None:
         """When discovery is disabled, it should not try to load from discovery document."""
-        metadata = self.get_success(self.provider.load_metadata())
+        self.get_success(self.provider.load_metadata())
         self.fake_server.get_metadata_handler.assert_not_called()
-
-        # Ensure the values are overridden correctly since these were configured
-        # explicitly
-        self.assertEqual(
-            metadata.authorization_endpoint,
-            EXPLICIT_ENDPOINT_CONFIG["authorization_endpoint"],
-        )
-        self.assertEqual(
-            metadata.token_endpoint, EXPLICIT_ENDPOINT_CONFIG["token_endpoint"]
-        )
-        self.assertEqual(metadata.jwks_uri, EXPLICIT_ENDPOINT_CONFIG["jwks_uri"])
-        self.assertEqual(
-            metadata.id_token_signing_alg_values_supported,
-            EXPLICIT_ENDPOINT_CONFIG["id_token_signing_alg_values_supported"],
-        )
 
     @override_config({"oidc_config": DEFAULT_CONFIG})
     def test_load_jwks(self) -> None:

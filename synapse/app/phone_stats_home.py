@@ -20,12 +20,7 @@
 #
 import logging
 import math
-
-try:
-    import resource
-except ImportError:
-    # On Windows, resource module is not available
-    resource = None
+import resource
 import sys
 from typing import TYPE_CHECKING, List, Mapping, Sized, Tuple
 
