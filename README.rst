@@ -1,4 +1,4 @@
-This repository is fork from [Synapse](https://github.com/element-hq/synapse). The rest of the README is from the original repository.
+This repository is fork from `Synapse <https://github.com/element-hq/synapse>`__. The rest of the README is from the original repository.
 
 .. image:: ./docs/element_logo_white_bg.svg
    :height: 60px
