@@ -28,7 +28,7 @@ __pycache__/
 /*.pid
 /.python-version
 /*.signing.key
-/env/           
+/env/
 /.venv*/
 /homeserver*.yaml
 /logs
@@ -39,11 +39,9 @@ __pycache__/
 # For direnv users
 /.envrc
 .direnv/
-.env
 
 # For nix/devenv users
 .devenv/
-matrix-venv/
 
 # IDEs
 /.idea/
@@ -64,6 +62,7 @@ matrix-venv/
 /htmlcov
 /pip-wheel-metadata/
 
+/data/
 # docs
 book/
 
