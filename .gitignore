@@ -62,8 +62,6 @@ __pycache__/
 /htmlcov
 /pip-wheel-metadata/
 
-/data/
-/data_test/
 # docs
 book/
 
