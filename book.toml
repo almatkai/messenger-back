@@ -29,7 +29,7 @@ git-repository-url = "https://github.com/element-hq/synapse"
 site-url = "/synapse/"
 
 # Additional HTML, JS, CSS that's injected into each page of the book.
-# More information available in docs/website_files/README.md
+# More information available in docs/website_files/README.rst
 additional-css = [
     "docs/website_files/table-of-contents.css",
     "docs/website_files/remove-nav-buttons.css",

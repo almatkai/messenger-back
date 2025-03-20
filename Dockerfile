@@ -19,7 +19,7 @@
 # poetry-managed environment in a docker image. We have opted for
 # `poetry export | pip install -r /dev/stdin`, but beware: we have experienced bugs in
 # in `poetry export` in the past.
-
+ARG VERSION=1.0.0
 ARG DEBIAN_VERSION=bookworm
 ARG PYTHON_VERSION=3.12
 ARG POETRY_VERSION=1.8.3
@@ -50,6 +50,9 @@ ARG TEST_ONLY_IGNORE_POETRY_LOCKFILE
 # (mounted as --mount=type=cache) and the target directory.
 ENV UV_LINK_MODE=copy
 
+# Skip README validation during build
+ENV POETRY_CORE_NO_VALIDATE_README=1
+
 # Export the dependencies, but only if we're actually going to use the Poetry lockfile.
 # Otherwise, just create an empty requirements file so that the Dockerfile can
 # proceed.
@@ -70,6 +73,9 @@ FROM ghcr.io/astral-sh/uv:python${PYTHON_VERSION}-${DEBIAN_VERSION} AS builder
 # This silences a warning as uv isn't able to do hardlinks between its cache
 # (mounted as --mount=type=cache) and the target directory.
 ENV UV_LINK_MODE=copy
+
+# Skip README validation during build
+ENV POETRY_CORE_NO_VALIDATE_README=1
 
 # Install rust and ensure its in the PATH
 ENV RUSTUP_HOME=/rust
@@ -96,8 +102,14 @@ RUN --mount=type=cache,target=/root/.cache/uv \
 # Copy over the rest of the synapse source code.
 COPY synapse /synapse/synapse/
 COPY rust /synapse/rust/
-# ... and what we need to `pip install`.
-COPY pyproject.toml README.rst build_rust.py Cargo.toml Cargo.lock /synapse/
+# Add version label
+LABEL version="1.0.0"
+
+# Copy necessary files for installation
+COPY pyproject.toml poetry.lock build_rust.py Cargo.toml Cargo.lock /synapse/
+
+# Create empty README to satisfy poetry
+RUN touch /synapse/README.rst
 
 # Repeat of earlier build argument declaration, as this is a new build stage.
 ARG TEST_ONLY_IGNORE_POETRY_LOCKFILE
