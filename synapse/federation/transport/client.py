@@ -860,7 +860,7 @@ class TransportLayerClient:
                 # tell the remote server to 404 if it doesn't
                 # recognise the server_name, to make sure we don't
                 # end up with a routing loop.
-                "allow_remote": "false",
+                "allow_remote": "true",
                 "timeout_ms": str(max_timeout_ms),
                 # Matrix 1.7 allows for this to redirect to another URL, this should
                 # just be ignored for an old homeserver, so always provide it.

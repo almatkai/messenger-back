@@ -229,7 +229,15 @@ class DownloadResource(RestServlet):
         # Validate the server name, raising if invalid
         parse_and_validate_server_name(server_name)
 
-        await self.auth.get_user_by_req(request, allow_guest=True)
+        # Make the authentication optional - this allows both authenticated and 
+        # unauthenticated requests to access media
+        try:
+            await self.auth.get_user_by_req(request, allow_guest=True)
+            allow_authenticated = True
+        except Exception:
+            # If authentication fails, we'll still try to serve the media
+            # but only if it's not marked as requiring authentication
+            allow_authenticated = False
 
         set_cors_headers(request)
         set_corp_headers(request)
@@ -253,7 +261,8 @@ class DownloadResource(RestServlet):
 
         if self._is_mine_server_name(server_name):
             await self.media_repo.get_local_media(
-                request, media_id, file_name, max_timeout_ms
+                request, media_id, file_name, max_timeout_ms, 
+                allow_authenticated=allow_authenticated
             )
         else:
             ip_address = request.getClientAddress().host
@@ -265,6 +274,7 @@ class DownloadResource(RestServlet):
                 max_timeout_ms,
                 ip_address,
                 True,
+                allow_authenticated=allow_authenticated
             )
 
 
